@@ -213,10 +213,14 @@
 </div>
 
 <script>
+// --- កំណត់អថេរមូលដ្ឋាន ---
 const khDays=['អាទិត្យ','ចន្ទ','អង្គារ','ពុធ','ព្រហស្បតិ៍','សុក្រ','សៅរ៍'];
-const khMonths=['មករា','កុម្ភៈ','មីនា','មេសា','ឧសភា','មិថុនា','កក្កដា','សីហា','កញ្ញា','តុលា','វិច្ឆិកា','ធ្នូ'];
+const khMonths=['មករា','កក្កដា','មីនា','មេសា','ឧសភា','មិថុនា','កក្កដា','សីហា','កញ្ញា','តុលា','វិច្ឆិកា','ធ្នូ'];
 const MAX_DAYS=21;
 const WARN_DAYS=16;
+const BATT_LEVEL_KEY = 'moto_batt_level'; // Key សម្រាប់រក្សាទុកកម្រិតថ្ម
+const STORAGE_KEY='moto_bal_history';
+
 const now=new Date();
 const todayIdx=now.getDay();
 const isSunday=todayIdx===0;
@@ -225,15 +229,23 @@ const todayDate=now.getDate();
 const todayMonth=now.getMonth();
 const todayYear=now.getFullYear();
 
+// --- បង្ហាញកាលបរិច្ឆេទលើ Header ---
 document.getElementById('dayNameHeader').textContent='ថ្ងៃ'+khDays[todayIdx];
 document.getElementById('dateNum').textContent=todayDate;
 document.getElementById('dateMonth').textContent=khMonths[todayMonth]+' '+todayYear;
 document.getElementById('dayNameStat').textContent=khDays[todayIdx];
 
-const STORAGE_KEY='moto_bal_history';
+// --- មុខងាររៀបចំទិន្នន័យ (LocalStorage) ---
 function saveHistory(arr){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}catch(e){}}
 function loadHistory(){try{const d=localStorage.getItem(STORAGE_KEY);return d?JSON.parse(d):[]}catch(e){return[]}}
 
+function saveBattLevel(val) { localStorage.setItem(BATT_LEVEL_KEY, val); }
+function loadBattLevel() { 
+  const saved = localStorage.getItem(BATT_LEVEL_KEY);
+  return saved ? parseInt(saved) : 65; 
+}
+
+// --- មុខងារគណនាកាលបរិច្ឆេទ ---
 function formatKhDate(dateStr){
   const d=new Date(dateStr);
   return d.getDate()+' '+khMonths[d.getMonth()]+' '+d.getFullYear();
@@ -250,6 +262,7 @@ function todayISO(){
   return y+'-'+m+'-'+d;
 }
 
+// --- បច្ចុប្បន្នភាព Tracker ---
 function updateTracker(){
   const history=loadHistory();
   const prog=document.getElementById('balProgress');
@@ -324,6 +337,7 @@ function recordBalance(){
   setTimeout(()=>{btn.textContent='✅ ទើបតែសាក Balance 100% ថ្ងៃនេះ';btn.style.background='rgba(0,230,118,0.08)';},2000);
 }
 
+// --- មុខងារបង្ហាញ Dashboard ---
 function getBattColor(pct){
   if(pct>=60)return'#00e676';
   if(pct>=30)return'#ff6d00';
@@ -389,15 +403,23 @@ function buildWeekRows(){
   container.innerHTML=html;
 }
 
+// --- ការចាប់ផ្តើមដំបូង និង Event Listeners ---
 const slider=document.getElementById('battSlider');
+const savedLevel = loadBattLevel(); // ទាញយកកម្រិតថ្មចុងក្រោយពី Memory
+
+// កំណត់តម្លៃទៅក្នុង Slider និង Dashboard ពេលបើកដំបូង
+slider.value = savedLevel;
+document.getElementById('sliderVal').textContent = savedLevel + '%';
+updateDash(savedLevel);
+
 slider.addEventListener('input',function(){
   const v=parseInt(this.value);
   document.getElementById('sliderVal').textContent=v+'%';
   updateDash(v);
+  saveBattLevel(v); // រក្សាទុកតម្លៃថ្មីរាល់ពេលអូស Slider
 });
 
 buildWeekRows();
-updateDash(65);
 updateTracker();
 </script>
 </body>
