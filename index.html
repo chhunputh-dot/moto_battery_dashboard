@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Moto Battery">
+<title>⚡ Moto Battery Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#0d0f14;--surface:#161923;--surface2:#1e2433;--border:#2a3045;
+    --accent:#00e5ff;--accent2:#7c4dff;--warn:#ff6d00;--danger:#ff1744;
+    --green:#00e676;--text:#e8eaf6;--muted:#7986cb;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans Khmer',sans-serif;overflow-x:hidden}
+  .dash{max-width:480px;margin:0 auto;padding:20px 16px 48px}
+  .header{text-align:center;margin-bottom:24px;padding-top:12px}
+  .header h1{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--accent);letter-spacing:2px;text-transform:uppercase}
+  .date-block{margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .date-day{font-size:14px;color:var(--muted)}
+  .date-num{font-family:'Rajdhani',sans-serif;font-size:52px;font-weight:700;color:var(--accent);line-height:1}
+  .date-month{font-size:13px;color:var(--muted)}
+
+  /* Battery Card */
+  .battery-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 18px;margin-bottom:16px;position:relative;overflow:hidden}
+  .battery-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+  .batt-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+  .batt-row{display:flex;align-items:center;gap:18px;margin-bottom:16px}
+  .batt-icon{position:relative;width:68px;height:34px;border:2.5px solid var(--accent);border-radius:7px;flex-shrink:0}
+  .batt-icon::after{content:'';position:absolute;right:-8px;top:50%;transform:translateY(-50%);width:6px;height:14px;background:var(--accent);border-radius:0 3px 3px 0}
+  .batt-fill{position:absolute;left:2px;top:2px;bottom:2px;border-radius:4px;transition:width 0.5s ease}
+  .batt-pct{font-family:'Rajdhani',sans-serif;font-size:52px;font-weight:700;line-height:1}
+  .batt-sub{font-size:12px;color:var(--muted)}
+  .target-line{position:relative;height:12px;margin-bottom:8px}
+  .tl-bg{height:12px;background:var(--surface2);border-radius:8px}
+  .tl-marker{position:absolute;top:-3px;width:3px;height:18px;background:#fff;border-radius:2px}
+  .tl-label{position:absolute;font-size:9px;color:#fff;top:-18px;transform:translateX(-50%)}
+
+  /* Alerts */
+  .alert-box{border-radius:14px;padding:14px 16px;margin-bottom:16px;font-size:14px;line-height:1.6;border:1px solid}
+  .alert-normal{background:rgba(0,229,255,0.07);border-color:rgba(0,229,255,0.25);color:#b2ebf2}
+  .alert-sunday{background:rgba(255,23,68,0.1);border-color:rgba(255,23,68,0.4);color:#ff8a80}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.75;transform:scale(1.015)}}
+  .pulse{animation:pulse 1.4s ease-in-out infinite}
+
+  /* Stats */
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
+  .stat-val{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700}
+  .stat-lbl{font-size:11px;color:var(--muted);margin-top:3px}
+
+  /* Slider */
+  .input-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px}
+  .input-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+  .input-row{display:flex;align-items:center;gap:12px}
+  .input-row label{font-size:13px;color:var(--muted);flex-shrink:0}
+  .batt-slider{flex:1;accent-color:var(--accent);height:6px;cursor:pointer;border-radius:4px}
+  .slider-val{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--accent);min-width:46px;text-align:right}
+
+  /* Section title */
+  .section-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;margin-top:6px}
+
+  /* Balance Tracker */
+  .tracker-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:16px;position:relative;overflow:hidden;transition:border-color 0.3s}
+  .tracker-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--green))}
+  .tracker-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+  .tracker-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .tracker-date{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700}
+  .tracker-ago{font-size:12px;color:var(--muted);margin-top:3px}
+  .tracker-days-num{font-family:'Rajdhani',sans-serif;font-size:52px;font-weight:700;line-height:1;text-align:right}
+  .tracker-days-lbl{font-size:11px;color:var(--muted);text-align:right}
+  .progress-track{height:14px;background:var(--surface2);border-radius:8px;overflow:visible;margin-bottom:8px;position:relative}
+  .progress-fill{height:100%;border-radius:8px;transition:width 0.6s ease}
+  .progress-danger-zone{position:absolute;right:0;top:0;bottom:0;width:25%;background:rgba(255,23,68,0.12);border-radius:0 8px 8px 0;border-left:1px dashed rgba(255,23,68,0.4)}
+  .progress-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:14px}
+  .btn-balance{width:100%;padding:14px;border-radius:12px;border:1px solid var(--green);background:rgba(0,230,118,0.08);color:var(--green);font-family:'Noto Sans Khmer',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+  .btn-balance:active{transform:scale(0.97);background:rgba(0,230,118,0.18)}
+  .bal-alert-ok{background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.25);border-radius:12px;padding:12px 14px;font-size:13px;color:#69f0ae;margin-bottom:16px;line-height:1.6}
+  .bal-alert-warn{background:rgba(255,109,0,0.08);border:1px solid rgba(255,109,0,0.35);border-radius:12px;padding:12px 14px;font-size:13px;color:#ffab40;margin-bottom:16px;line-height:1.6}
+  .bal-alert-danger{background:rgba(255,23,68,0.1);border:1px solid rgba(255,23,68,0.4);border-radius:12px;padding:12px 14px;font-size:13px;color:#ff8a80;margin-bottom:16px;line-height:1.6}
+  .history-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .history-item{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);padding:8px 12px;background:var(--surface2);border-radius:10px}
+  .history-item span:last-child{color:var(--green);font-family:'Rajdhani',sans-serif;font-size:14px}
+
+  /* Weekly Table */
+  .weekly-table{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px}
+  .wt-head{display:grid;grid-template-columns:1fr 54px 58px 58px;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+  .wt-row{display:grid;grid-template-columns:1fr 54px 58px 58px;padding:12px 14px;border-bottom:1px solid var(--border);align-items:center;font-size:13px}
+  .wt-row:last-child{border-bottom:none}
+  .wt-row.today{background:rgba(0,229,255,0.06)}
+  .badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:500;text-align:center}
+  .badge-80{background:rgba(0,230,118,0.15);color:#69f0ae;border:1px solid rgba(0,230,118,0.3)}
+  .badge-100{background:rgba(255,23,68,0.12);color:#ff8a80;border:1px solid rgba(255,23,68,0.3)}
+
+  /* Tips */
+  .tip-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:24px}
+  .tip-row{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);margin-bottom:8px;line-height:1.6}
+  .tip-row:last-child{margin-bottom:0}
+  .tip-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:6px;flex-shrink:0}
+
+  /* Safe area for notch phones */
+  @supports(padding-top: env(safe-area-inset-top)){
+    .dash{padding-top:calc(20px + env(safe-area-inset-top));padding-bottom:calc(48px + env(safe-area-inset-bottom))}
+  }
+</style>
+</head>
+<body>
+<div class="dash">
+
+  <div class="header">
+    <h1>⚡ Moto Battery</h1>
+    <div class="date-block">
+      <div class="date-day" id="dayNameHeader"></div>
+      <div class="date-num" id="dateNum"></div>
+      <div class="date-month" id="dateMonth"></div>
+    </div>
+  </div>
+
+  <div class="input-wrap">
+    <div class="input-label">កំណត់ភាគរយថ្មបច្ចុប្បន្ន</div>
+    <div class="input-row">
+      <label>ថ្ម</label>
+      <input type="range" min="0" max="100" value="65" class="batt-slider" id="battSlider" step="1">
+      <span class="slider-val" id="sliderVal">65%</span>
+    </div>
+  </div>
+
+  <div class="battery-card">
+    <div class="batt-label">ស្ថានភាពថ្មបច្ចុប្បន្ន</div>
+    <div class="batt-row">
+      <div class="batt-icon">
+        <div class="batt-fill" id="battFill" style="width:65%"></div>
+      </div>
+      <div>
+        <div class="batt-pct" id="battPct">65%</div>
+        <div class="batt-sub" id="battStatus">ស្ថានភាពល្អ</div>
+      </div>
+    </div>
+    <div class="target-line">
+      <div class="tl-bg"></div>
+      <div class="tl-marker" id="pctMarker" style="left:65%"></div>
+      <div class="tl-label" id="pctLabelMark" style="left:65%">65%</div>
+      <div class="tl-marker" id="targetMarker" style="background:var(--warn)"></div>
+      <div class="tl-label" id="targetLabelMark" style="color:var(--warn)"></div>
+    </div>
+    <div class="batt-sub" id="targetHint" style="margin-top:10px"></div>
+  </div>
+
+  <div id="alertBox"></div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val" id="toCharge" style="color:var(--accent)">—</div>
+      <div class="stat-lbl">ត្រូវសាកបន្ថែម</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="dayNameStat" style="color:var(--accent2)">—</div>
+      <div class="stat-lbl">ថ្ងៃនៃសប្តាហ៍</div>
+    </div>
+  </div>
+
+  <div class="section-title">🔋 Last Balance Tracker</div>
+  <div class="tracker-card" id="trackerCard">
+    <div class="tracker-top">
+      <div>
+        <div class="tracker-lbl">Balance ចុងក្រោយ</div>
+        <div class="tracker-date" id="lastBalDate">—</div>
+        <div class="tracker-ago" id="lastBalAgo"></div>
+      </div>
+      <div>
+        <div class="tracker-days-num" id="daysSinceBal">—</div>
+        <div class="tracker-days-lbl">ថ្ងៃ​កន្លង</div>
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="balProgress" style="width:0%"></div>
+      <div class="progress-danger-zone"></div>
+    </div>
+    <div class="progress-labels">
+      <span>0 ថ្ងៃ</span>
+      <span style="color:var(--warn)">⚠ 16 ថ្ងៃ</span>
+      <span style="color:var(--danger)">21 ថ្ងៃ</span>
+    </div>
+    <button class="btn-balance" id="balBtn" onclick="recordBalance()">✅ ទើបតែសាក Balance 100% ថ្ងៃនេះ</button>
+    <div class="history-list" id="historyList"></div>
+  </div>
+  <div id="balAlertBox"></div>
+
+  <div class="section-title">កាលវិភាគប្រចាំសប្តាហ៍</div>
+  <div class="weekly-table">
+    <div class="wt-head">
+      <span>ថ្ងៃ</span>
+      <span style="text-align:center">ថ្ងៃទី</span>
+      <span style="text-align:center">គោលដៅ</span>
+      <span style="text-align:center">ប្រភេទ</span>
+    </div>
+    <div id="weekRows"></div>
+  </div>
+
+  <div class="section-title">គន្លឹះថែទាំថ្ម</div>
+  <div class="tip-box">
+    <div class="tip-row"><div class="tip-dot"></div><span>ចន្ទ–សៅរ៍: សាកត្រឹម ៨០% ដើម្បីថែរក្សាសែល</span></div>
+    <div class="tip-row"><div class="tip-dot"></div><span>អាទិត្យ: សាកពេញ ១០០% ដើម្បី Balance Cell</span></div>
+    <div class="tip-row"><div class="tip-dot"></div><span>Balance Cell ត្រូវធ្វើរៀងរាល់ 21 ថ្ងៃម្ដង</span></div>
+    <div class="tip-row"><div class="tip-dot"></div><span>ត្រូវបិទចរន្តភ្លាមៗ នៅពេលដល់គោលដៅ</span></div>
+  </div>
+
+</div>
+
+<script>
+const khDays=['អាទិត្យ','ចន្ទ','អង្គារ','ពុធ','ព្រហស្បតិ៍','សុក្រ','សៅរ៍'];
+const khMonths=['មករា','កុម្ភៈ','មីនា','មេសា','ឧសភា','មិថុនា','កក្កដា','សីហា','កញ្ញា','តុលា','វិច្ឆិកា','ធ្នូ'];
+const MAX_DAYS=21;
+const WARN_DAYS=16;
+const now=new Date();
+const todayIdx=now.getDay();
+const isSunday=todayIdx===0;
+const target=isSunday?100:80;
+const todayDate=now.getDate();
+const todayMonth=now.getMonth();
+const todayYear=now.getFullYear();
+
+document.getElementById('dayNameHeader').textContent='ថ្ងៃ'+khDays[todayIdx];
+document.getElementById('dateNum').textContent=todayDate;
+document.getElementById('dateMonth').textContent=khMonths[todayMonth]+' '+todayYear;
+document.getElementById('dayNameStat').textContent=khDays[todayIdx];
+
+const STORAGE_KEY='moto_bal_history';
+function saveHistory(arr){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}catch(e){}}
+function loadHistory(){try{const d=localStorage.getItem(STORAGE_KEY);return d?JSON.parse(d):[]}catch(e){return[]}}
+
+function formatKhDate(dateStr){
+  const d=new Date(dateStr);
+  return d.getDate()+' '+khMonths[d.getMonth()]+' '+d.getFullYear();
+}
+function daysBetween(dateStr){
+  const past=new Date(dateStr);past.setHours(0,0,0,0);
+  const today=new Date();today.setHours(0,0,0,0);
+  return Math.floor((today-past)/(1000*60*60*24));
+}
+function todayISO(){
+  const y=now.getFullYear();
+  const m=String(now.getMonth()+1).padStart(2,'0');
+  const d=String(now.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+d;
+}
+
+function updateTracker(){
+  const history=loadHistory();
+  const prog=document.getElementById('balProgress');
+  const daysEl=document.getElementById('daysSinceBal');
+  const dateEl=document.getElementById('lastBalDate');
+  const agoEl=document.getElementById('lastBalAgo');
+  const alertBox=document.getElementById('balAlertBox');
+  const card=document.getElementById('trackerCard');
+  const historyList=document.getElementById('historyList');
+
+  if(history.length===0){
+    dateEl.textContent='មិនទាន់មាន';
+    daysEl.textContent='?';
+    daysEl.style.color='var(--muted)';
+    prog.style.width='0%';
+    prog.style.background='var(--muted)';
+    card.style.borderColor='var(--border)';
+    alertBox.innerHTML=`<div class="bal-alert-warn">⚠️ មិនទាន់មានការ Balance ណាមួយទេ។ សូមចុចប៊ូតុងខាងក្រោម នៅពេលដែលបានសាក ១០០%!</div>`;
+    historyList.innerHTML='';
+    return;
+  }
+
+  const last=history[history.length-1];
+  const days=daysBetween(last);
+  const pct=Math.min(100,Math.round((days/MAX_DAYS)*100));
+
+  dateEl.textContent=formatKhDate(last);
+  daysEl.textContent=days;
+  prog.style.width=pct+'%';
+
+  if(days===0){agoEl.textContent='ថ្ងៃនេះ ✓';agoEl.style.color='var(--green)';}
+  else if(days===1){agoEl.textContent='ម្សិលមិញ';agoEl.style.color='var(--muted)';}
+  else{agoEl.textContent=days+' ថ្ងៃ​មុន';agoEl.style.color=days>=WARN_DAYS?'var(--warn)':'var(--muted)';}
+
+  if(days>=MAX_DAYS){
+    daysEl.style.color='var(--danger)';
+    prog.style.background='var(--danger)';
+    card.style.borderColor='rgba(255,23,68,0.5)';
+    alertBox.innerHTML=`<div class="bal-alert-danger pulse">🚨 <strong>លើស ${MAX_DAYS} ថ្ងៃហើយ!</strong> ថ្មទុំសម្រាប់ Balance! សូម Balance ១០០% ឱ្យបានឆាប់!</div>`;
+  }else if(days>=WARN_DAYS){
+    daysEl.style.color='var(--warn)';
+    prog.style.background='var(--warn)';
+    card.style.borderColor='rgba(255,109,0,0.4)';
+    alertBox.innerHTML=`<div class="bal-alert-warn">⚠️ <strong>ជិតដល់ ${MAX_DAYS} ថ្ងៃហើយ</strong> (${days}/${MAX_DAYS})។ ត្រៀមខ្លួន Balance ១០០% នៅអាទិត្យក្រោយ!</div>`;
+  }else{
+    daysEl.style.color='var(--green)';
+    prog.style.background='var(--green)';
+    card.style.borderColor='rgba(0,230,118,0.25)';
+    alertBox.innerHTML=`<div class="bal-alert-ok">✅ ថ្មស្ថិតក្នុងស្ថានភាពល្អ (${days}/${MAX_DAYS} ថ្ងៃ)។ Balance ក្នុង ${MAX_DAYS-days} ថ្ងៃទៀត។</div>`;
+  }
+
+  const recent=history.slice(-3).reverse();
+  let hHtml='<div style="font-size:10px;color:var(--muted);margin-top:10px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">ប្រវត្តិ Balance</div>';
+  recent.forEach((d,i)=>{
+    const da=daysBetween(d);
+    hHtml+=`<div class="history-item"><span>${i===0?'🔋 ':''}${formatKhDate(d)}</span><span>${da===0?'ថ្ងៃនេះ':da+' ថ្ងៃ​មុន'}</span></div>`;
+  });
+  historyList.innerHTML=hHtml;
+}
+
+function recordBalance(){
+  const history=loadHistory();
+  const today=todayISO();
+  if(history.length>0&&history[history.length-1]===today)return;
+  history.push(today);
+  if(history.length>10)history.shift();
+  saveHistory(history);
+  updateTracker();
+  const btn=document.getElementById('balBtn');
+  btn.textContent='✓ បានកត់ត្រារួចហើយ!';
+  btn.style.background='rgba(0,230,118,0.2)';
+  setTimeout(()=>{btn.textContent='✅ ទើបតែសាក Balance 100% ថ្ងៃនេះ';btn.style.background='rgba(0,230,118,0.08)';},2000);
+}
+
+function getBattColor(pct){
+  if(pct>=60)return'#00e676';
+  if(pct>=30)return'#ff6d00';
+  return'#ff1744';
+}
+function getStatus(pct){
+  if(pct>=80)return'ថ្មពោរពេញ';
+  if(pct>=60)return'ស្ថានភាពល្អ';
+  if(pct>=30)return'ចាំបាច់សាក';
+  return'ថ្មខ្សោយ!';
+}
+
+function updateDash(pct){
+  const color=getBattColor(pct);
+  document.getElementById('battFill').style.width=pct+'%';
+  document.getElementById('battFill').style.background=color;
+  document.getElementById('battPct').textContent=pct+'%';
+  document.getElementById('battPct').style.color=color;
+  document.getElementById('battStatus').textContent=getStatus(pct);
+  const remaining=Math.max(0,target-pct);
+  const el=document.getElementById('toCharge');
+  el.textContent=remaining>0?'+'+remaining+'%':'✓ ដល់គោល';
+  el.style.color=remaining>0?'var(--accent)':'var(--green)';
+  document.getElementById('pctMarker').style.left=pct+'%';
+  document.getElementById('pctLabelMark').style.left=pct+'%';
+  document.getElementById('pctLabelMark').textContent=pct+'%';
+  document.getElementById('targetMarker').style.left=target+'%';
+  document.getElementById('targetLabelMark').style.left=target+'%';
+  document.getElementById('targetLabelMark').textContent=target+'%';
+  document.getElementById('targetHint').textContent='គោលដៅ: '+target+'%';
+  document.getElementById('targetHint').style.color='var(--warn)';
+  const alertBox=document.getElementById('alertBox');
+  if(isSunday){
+    alertBox.innerHTML=`<div class="alert-box alert-sunday pulse">🔴 <strong>ថ្ងៃនេះត្រូវសាកឱ្យពេញ ១០០%</strong><br><span style="font-size:13px">(ដើម្បី Balance Cell ប្រចាំសប្តាហ៍!)</span></div>`;
+  }else{
+    alertBox.innerHTML=`<div class="alert-box alert-normal">🔵 <strong>ថ្ងៃនេះត្រូវសាកត្រឹម ៨០%</strong><br><span style="font-size:13px">(ដើម្បីថែទាំថ្ម និងពន្យារអាយុការប្រើប្រាស់)</span></div>`;
+  }
+}
+
+function buildWeekRows(){
+  const container=document.getElementById('weekRows');
+  let html='';
+  for(let i=1;i<=7;i++){
+    const idx=i%7;
+    const isSun=idx===0;
+    const isToday=idx===todayIdx;
+    const tgt=isSun?'100%':'80%';
+    const type=isSun?'Balance':'ថែទាំ';
+    const badgeClass=isSun?'badge-100':'badge-80';
+    const diff=idx-todayIdx;
+    const rowDate=new Date(now);
+    rowDate.setDate(todayDate+diff);
+    const dayNum=rowDate.getDate();
+    const monthNum=rowDate.getMonth()+1;
+    const dateStr=dayNum+'/'+(monthNum<10?'0'+monthNum:monthNum);
+    html+=`<div class="wt-row${isToday?' today':''}">
+      <span style="display:flex;align-items:center;gap:4px;${isToday?'color:var(--accent);font-weight:700':''}">${isToday?'📍 ':''}<span>${khDays[idx]}</span></span>
+      <span style="text-align:center;font-family:'Rajdhani',sans-serif;font-size:14px;color:${isToday?'var(--accent)':'var(--muted)'};font-weight:${isToday?'700':'400'}">${dateStr}</span>
+      <span style="text-align:center;font-family:'Rajdhani',sans-serif;font-weight:700;color:${isSun?'var(--danger)':'var(--green)'}">${tgt}</span>
+      <span style="text-align:center"><span class="badge ${badgeClass}">${type}</span></span>
+    </div>`;
+  }
+  container.innerHTML=html;
+}
+
+const slider=document.getElementById('battSlider');
+slider.addEventListener('input',function(){
+  const v=parseInt(this.value);
+  document.getElementById('sliderVal').textContent=v+'%';
+  updateDash(v);
+});
+
+buildWeekRows();
+updateDash(65);
+updateTracker();
+</script>
+</body>
+</html>
